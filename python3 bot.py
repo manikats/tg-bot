@@ -9,7 +9,8 @@ from telegram import Update
 from telegram.ext import Updater, MessageHandler, Filters, CallbackContext
 
 # Configuration
-TELEGRAM_BOT_TOKEN = 'YOUR_BOT_TOKEN'
+TELEGRAM_BOT_TOKEN = '7818808601:AAHRDtP5JuWy60n63zee7Ss1SbB39q73wNw
+'
 SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com'
 DEXSCREENER_WS_URL = 'wss://io.dexscreener.com/dex/screener/pairs'
 CACHE_TTL = 600  # 10 minutes
