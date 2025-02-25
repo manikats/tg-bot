@@ -4,7 +4,7 @@ import numba
 import re
 from datetime import datetime, timedelta
 from aiohttp import ClientSession, ClientWebSocketResponse
-from aioredis import Redis
+import redis.asyncio as redis
 from telegram import Update
 from telegram.ext import Updater, MessageHandler, Filters, CallbackContext
 
