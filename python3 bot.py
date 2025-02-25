@@ -13,6 +13,7 @@ TELEGRAM_BOT_TOKEN = '7818808601:AAHRDtP5JuWy60n63zee7Ss1SbB39q73wNw'
 SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com'
 DEXSCREENER_WS_URL = 'wss://io.dexscreener.com/dex/screener/pairs'
 CACHE_TTL = 600  # 10 minutes
+USER_CHAT_ID = t.me/MasterManic_bot
 
 class OptimizedSolanaTradingBot:
     def __init__(self):
