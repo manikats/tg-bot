@@ -3,27 +3,29 @@ import logging
 import numba
 import redis.asyncio as redis
 import re
-import json
 import time
+import json
 from functools import wraps
 from datetime import datetime, timedelta
 from aiohttp import ClientSession
 from telegram import Update
-from telegram.ext import Application, MessageHandler, filters, CallbackContext
+from telegram.ext import Application, MessageHandler, Filters, CallbackContext
 
 def rate_limited(max_calls, period):
-    """ Decorator to limit function calls over a time period. """
+    """ Dekorator limitujący liczbę wywołań funkcji w danym czasie. """
     def decorator(func):
         calls = []
 
         @wraps(func)
         def wrapper(*args, **kwargs):
             now = time.time()
-            calls[:] = [t for t in calls if now - t < period]  # Remove old calls
+            calls[:] = [t for t in calls if now - t < period]  # Usuwamy stare wywołania
             if len(calls) >= max_calls:
-                time.sleep(period - (now - calls[0]))  # Wait for the next available slot
+                # Czekamy na dostępne miejsce
+                time.sleep(period - (now - calls[0]))
             calls.append(time.time())
             return func(*args, **kwargs)
+
         return wrapper
     return decorator
 
@@ -32,7 +34,7 @@ TELEGRAM_BOT_TOKEN = '7818808601:AAHRDtP5JuWy60n63zee7Ss1SbB39q73wNw'
 SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com'
 DEXSCREENER_WS_URL = 'wss://io.dexscreener.com/dex/screener/pairs'
 CACHE_TTL = 600  # 10 minutes
-USER_CHAT_ID = 958430077  # User or group chat ID
+USER_CHAT_ID = 958430077  # Podaj ID użytkownika lub grupy
 
 class OptimizedSolanaTradingBot:
     def __init__(self):
@@ -45,16 +47,16 @@ class OptimizedSolanaTradingBot:
         self.session = ClientSession()
         self.redis = await redis.from_url('redis://localhost:6379', decode_responses=True)
         self.ws = await self.session.ws_connect(DEXSCREENER_WS_URL)
-        asyncio.create_task(self.fetch_loop())
+        asyncio.create_task(self.fetch_loop())  # ⬅️ WAŻNE!
 
     async def fetch_loop(self):
         while True:
             try:
-                data = await self.fetch_pair_data("SOL/USDC")
-                print(f"Fetched data: {data}")
+                data = await self.fetch_pair_data("SOL/USDC")  # Pobranie danych
+                print(f"Pobrane dane: {data}")  # Debug
             except Exception as e:
-                print(f"❌ Error in fetch_loop: {e}")
-            await asyncio.sleep(5)
+                print(f"❌ Błąd w fetch_loop: {e}")
+            await asyncio.sleep(5)  # Oczekiwanie 5 sekund
 
     async def fetch_pair_data(self, pair="SOL/USDC"):
         url = f"https://api.dexscreener.com/latest/dex/search?q={pair}"
@@ -72,7 +74,7 @@ class OptimizedSolanaTradingBot:
             return json.loads(cached)
 
         async with self.session.get(
-            f"https://api.dexscreener.com/latest/dex/tokens/{token_address}"
+                f"https://api.dexscreener.com/latest/dex/tokens/{token_address}"
         ) as resp:
             data = await resp.json()
             pair = next((p for p in data['pairs'] if p['dexId'] in {'raydium', 'orca'}), None)
@@ -115,18 +117,18 @@ class OptimizedSolanaTradingBot:
     async def _check_holder_distribution(self, token_address):
         holders = await self._get_holders(token_address)
         total = sum(h['amount'] for h in holders)
-        return all((h['amount'] / total) <= 0.1 for h in holders[:3])
+        return all((h['amount']/total) <= 0.1 for h in holders[:3])
 
     async def _check_lp_lock(self, token_address):
         async with self.session.get(
-            f"https://api.raydium.io/v2/main/pool/liquidity/{token_address}"
+                f"https://api.raydium.io/v2/main/pool/liquidity/{token_address}"
         ) as resp:
             data = await resp.json()
             return data.get('liquidity_locked', 0) > 0
 
     async def _check_slerf_protection(self, token_address):
         async with self.session.get(
-            f"https://api.solscan.io/token/meta?tokenAddress={token_address}"
+                f"https://api.solscan.io/token/meta?tokenAddress={token_address}"
         ) as resp:
             data = await resp.json()
             return not data.get('isSlerf', False)
@@ -167,4 +169,36 @@ class OptimizedSolanaTradingBot:
             f"🚨 SOLANA ALERT 🚨\n"
             f"🔗 Address: `{token_address}`\n"
             f"💰 Price: ${analysis['price']:.4f}\n"
-            
+            f"📈 Score: {analysis['score']:.2f}/1.0\n"
+            f"💧 Liquidity: ${analysis['liquidity']:,.0f}\n"
+            f"[DEX Screener](https://dexscreener.com/solana/{token_address})"
+        )
+
+        await context.bot.send_message(
+            chat_id=USER_CHAT_ID,
+            text=message,
+            parse_mode='Markdown'
+        )
+
+    async def close(self):
+        await self.ws.close()
+        await self.session.close()
+
+async def main():
+    bot = OptimizedSolanaTradingBot()
+    await bot.initialize()
+
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    application.add_handler(MessageHandler(Filters.text & ~Filters.command, bot.process_message))
+
+    await application.start()
+    await application.updater.start_polling()
+    await application.updater.idle()
+    await bot.close()
+
+if __name__ == '__main__':
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    asyncio.run(main())
