@@ -57,7 +57,11 @@ class OptimizedSolanaTradingBot:
             except Exception as e:
                 print(f"❌ Błąd w fetch_loop: {e}")
             await asyncio.sleep(5)
-
+    async def close(self):  # ⬅️ Zamykamy poprawnie sesję!
+         if self.session:
+            await self.session.close()
+               print("✅ Sesja HTTP zamknięta")
+             
     async def fetch_pair_data(self, pair="SOL/USDC"):
         url = f"https://api.dexscreener.com/latest/dex/search?q={pair}"
         async with self.session.get(url) as response:
