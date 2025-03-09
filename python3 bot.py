@@ -30,11 +30,11 @@ def rate_limited(max_calls, period):
 
 
 # Configuration
-TELEGRAM_BOT_TOKEN = '7818808601:AAHRDtP5JuWy60n63zee7Ss1SbB39q73wNw'
-SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com'
+TELEGRAM_BOT_TOKEN = ''
+SOLANA_RPC_URL = ''
 DEXSCREENER_WS_URL = 'wss://io.dexscreener.com/dex/screener/pairs'
 CACHE_TTL = 600  # 10 minutes
-USER_CHAT_ID = 958430077  # Provide user or group ID
+USER_CHAT_ID =   # Provide user or group ID
 
 class OptimizedSolanaTradingBot:
     def __init__(self):
